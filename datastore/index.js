@@ -16,8 +16,7 @@ exports.create = (text, callback) => {
       } else {
         callback(null, { id, text });
       }
-    }
-    );
+    });
   });
 };
 
@@ -37,12 +36,14 @@ exports.readAll = (callback) => {
 };
 
 exports.readOne = (id, callback) => {
-  var text = items[id];
-  if (!text) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    callback(null, { id, text });
-  }
+  fs.readFile(exports.dataDir + '/' + id + '.txt', (err, data) => {
+    if (err) {
+      callback(err);
+    } else {
+      text = data.toString();
+      callback(null, {id, text});
+    }
+  });
 };
 
 exports.update = (id, text, callback) => {
