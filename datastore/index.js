@@ -3,12 +3,11 @@ const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
 
-var items = {};
+var items = {};  // can be deleted once we're done
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
 exports.create = (text, callback) => {
-
   counter.getNextUniqueId( (err, id) => {
     fs.writeFile( exports.dataDir + '/' + id + '.txt', text, (err) => {
       if (err) {
@@ -21,7 +20,6 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-
   fs.readdir(exports.dataDir, (err, files) => {
     if (err) {
       callback(err);
@@ -47,13 +45,19 @@ exports.readOne = (id, callback) => {
 };
 
 exports.update = (id, text, callback) => {
-  var item = items[id];
-  if (!item) {
-    callback(new Error(`No item with id: ${id}`));
-  } else {
-    items[id] = text;
-    callback(null, { id, text });
-  }
+  fs.readFile(exports.dataDir + '/' + id + '.txt', (err, data) => {
+    if (err) {
+      callback(err);
+    } else {
+      fs.writeFile( exports.dataDir + '/' + id + '.txt', text, (err) => {
+        if (err) {
+          callback(err);
+        } else {
+          callback(null, { id, text });
+        }
+      });
+    }
+  });
 };
 
 exports.delete = (id, callback) => {
