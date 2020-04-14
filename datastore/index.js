@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('underscore');
 const counter = require('./counter');
+const Promise = require('bluebird');
 
 // Public API - Fix these CRUD functions ///////////////////////////////////////
 
@@ -18,17 +19,49 @@ exports.create = (text, callback) => {
 };
 
 exports.readAll = (callback) => {
-  fs.readdir(exports.dataDir, (err, files) => {
-    if (err) {
-      callback(err);
-    } else {
-      callback(null, files.map( (filename) => {
-        let id = filename.substring(0, filename.length - 4);
-        let text = filename.substring(0, filename.length - 4);
-        return {id, text};
+  var getFileNames = function() {
+    return new Promise( (resolve, reject) => {
+      fs.readdir(exports.dataDir, (err, files) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(files);
+        }
+      });
+    });
+  };
+
+  var fileNamesToPromises = (files) => {
+    return new Promise( (resolve, reject) => {
+      resolve(files.map((filename) => {
+        return new Promise ( (resolve, reject) => {
+          let id = filename.substring(0, filename.length - 4);
+          let text;
+          fs.readFile(exports.dataDir + '/' + filename, (err, data) => {
+            if (err) {
+              reject(err);
+            } else {
+              text = data.toString();
+              resolve({id, text});
+            }
+          });
+        });
       }));
-    }
-  });
+    });
+  };
+
+  var getAllFileObjects = function (arrayOfPromises) {
+    return Promise.all(arrayOfPromises);
+  };
+
+  var sendBackObject = (arrayOfObjs) => {
+    callback(null, arrayOfObjs);
+  };
+
+  getFileNames()
+    .then(fileNamesToPromises)
+    .then(getAllFileObjects)
+    .then(sendBackObject);
 };
 
 exports.readOne = (id, callback) => {
